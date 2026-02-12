@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viloria Cosmetics</title>
+
+<style>
+body{font-family:sans-serif;margin:0;background:#f7f7f7;color:#333}
+header{background:#e8c7d6;padding:15px;text-align:center;box-shadow: 0 2px 5px rgba(0,0,0,0.1)}
+nav button{margin:5px;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;background:#fff;transition: 0.3s}
+nav button:hover{background:#f08ab5;color:#fff}
+
+section{display:none;padding:20px;max-width:1200px;margin:auto}
+section.active{display:block}
+
+.card{background:#fff;border-radius:10px;padding:10px;margin-bottom:10px;box-shadow: 0 2px 4px rgba(0,0,0,0.05)}
+
+.product{
+  background:#fff;
+  border-radius:12px;
+  padding:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  display:flex;
+  flex-direction:column;
+}
+
+.product img{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  border-radius:10px;
+}
+
+/* 🔥 แสดง 4 สินค้าต่อแถว */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:20px;
+}
+
+/* Responsive */
+@media(max-width:1000px){
+  .grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr;}
+}
+
+.btn{background:#e38cb7;color:#fff;padding:8px 12px;border:none;border-radius:6px;cursor:pointer;width:100%}
+.btn:hover{background:#d17aa5}
+.admin{background:#fff0f6}
+
+input,select{width:100%;padding:10px;margin-bottom:8px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box}
+
+.filter{text-align:center;margin-bottom:20px}
+.filter button{margin:3px;width:auto;display:inline-block}
+
+.small{font-size:12px;color:#666}
+
+.qty{
+ display:flex;
+ justify-content:center;
+ align-items:center;
+ gap:10px;
+ margin-top:6px
+}
+.qty button{
+ padding:4px 10px;
+ border-radius:4px;
+ border:1px solid #ddd;
+ background:#fff;
+ cursor:pointer
+}
+
+.cart-btn{margin-top:auto;background:#f08ab5}
+
+.pay-box{
+ background:#fff;
+ border-radius:10px;
+ padding:15px;
+ margin-top:15px;
+ border:2px solid #e8c7d6;
+}
+
+#qrSection{
+ text-align:center;
+ display:none;
+ margin-top:15px;
+ padding:10px;
+ border:1px dashed #e38cb7;
+ border-radius:10px;
+}
+#qrSection img{
+ width:200px;
+ height:200px;
+ margin-bottom:10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <h1>🌸 Viloria Cosmetics 🌸</h1>
+ <nav>
+   <button onclick="show('menu')">เมนู</button>
+   <button onclick="show('cart')">ตะกร้า</button>
+   <button onclick="show('login')">สมาชิก</button>
+   <button onclick="show('admin')">แอดมิน</button>
+ </nav>
+</header>
+
+<section id="menu" class="active">
+ <h2>เมนูสินค้า</h2>
+ <div class="filter">
+   <button class="btn" onclick="filterCategory('ทั้งหมด')">ทั้งหมด</button>
+   <button class="btn" onclick="filterCategory('เมคอัพ')">เมคอัพ</button>
+   <button class="btn" onclick="filterCategory('สกินแคร์')">สกินแคร์</button>
+   <button class="btn" onclick="filterCategory('น้ำหอม')">น้ำหอม</button>
+ </div>
+ <div class="grid" id="productList"></div>
+</section>
+
+<section id="cart">
+ <h2>ตะกร้าสินค้า</h2>
+ <div id="cartList"></div>
+ <div class="card">
+   <p style="font-size:1.2rem;"><b>ยอดรวมรวมทั้งสิ้น:</b>
+   <span id="totalSpan" style="color:#e38cb7;font-weight:bold">0</span> บาท</p>
+ </div>
+
+ <div class="pay-box">
+   <h3>ช่องชำระเงิน</h3>
+   <select id="paymentMethod" onchange="toggleQR()">
+     <option value="">เลือกวิธีชำระเงิน</option>
+     <option value="transfer">โอนเงินผ่านธนาคาร</option>
+     <option value="promptpay">พร้อมเพย์</option>
+     <option value="cod">เก็บเงินปลายทาง</option>
+   </select>
+
+   <div id="qrSection">
+     <p><b>สแกนเพื่อชำระเงิน</b></p>
+     <img id="qrImage"
+      src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=ViloriaCosmeticsPayment">
+     <p class="small">หลังจากโอนแล้ว กดปุ่มยืนยันด้านล่าง</p>
+   </div>
+
+   <button class="btn" style="margin-top:10px"
+    onclick="checkout()">ยืนยันการสั่งซื้อ</button>
+ </div>
+
+ <hr>
+ <h3>สถานะการสั่งซื้อล่าสุด</h3>
+ <div id="orderList"></div>
+</section>
+
+<section id="login">
+ <h2>สมัคร / เข้าสู่ระบบ</h2>
+ <input id="email" placeholder="อีเมล">
+ <input id="password" type="password" placeholder="รหัสผ่าน">
+ <div style="display:flex; gap:10px">
+   <button class="btn" onclick="register()">สมัครสมาชิก</button>
+   <button class="btn" onclick="login()" style="background:#8cb7e3">เข้าสู่ระบบ</button>
+ </div>
+ <p class="small" id="loginStatus" style="margin-top:10px;text-align:center"></p>
+</section>
+
+<section id="admin" class="admin">
+ <h2>แอดมิน : จัดการสินค้า & ออเดอร์</h2>
+ <div class="card">
+   <label class="small">เพิ่มรูปสินค้า:</label>
+   <input type="file" id="imgInput">
+   <input id="nameInput" placeholder="ชื่อสินค้า">
+   <input id="priceInput" type="number" placeholder="ราคา">
+   <select id="categoryInput">
+     <option value="">เลือกหมวด</option>
+     <option>เมคอัพ</option>
+     <option>สกินแคร์</option>
+     <option>น้ำหอม</option>
+   </select>
+   <button class="btn" onclick="addProduct()">เพิ่ม/แก้ไข สินค้า</button>
+ </div>
+
+ <hr>
+ <div id="adminList"></div>
+</section>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbyOgKBA-kpp5Odwrj8fEVOZvePNytZdiqzwUBEkFiWDzlpAizByhdw8D820oOE6iaXY0Q/exec";
+
+let products = JSON.parse(localStorage.getItem('products')) || [];
+let cart = JSON.parse(localStorage.getItem('cart')) || [];
+let users = JSON.parse(localStorage.getItem('users')) || [];
+let orders = JSON.parse(localStorage.getItem('orders')) || [];
+let currentUser = localStorage.getItem('currentUser');
+let editIndex = null;
+let currentCategory = 'ทั้งหมด';
+
+/* ================= LOAD FROM GOOGLE SHEET ================= */
+async function loadProductsFromSheet(){
+ try{
+   const res = await fetch(API_URL+"?action=getProducts");
+   const data = await res.json();
+   if(data.length){
+     products = data;
+     save();
+     renderProducts();
+   }
+ }catch(err){ console.log("โหลดสินค้าไม่ได้"); }
+}
+
+async function loadOrdersFromSheet(){
+ try{
+   const res = await fetch(API_URL+"?action=getOrders");
+   const data = await res.json();
+   if(data.length){
+     orders = data;
+     save();
+     renderOrders();
+     renderAdminOrders();
+   }
+ }catch(err){ console.log("โหลดออเดอร์ไม่ได้"); }
+}
+
+async function loadUsersFromSheet(){
+ try{
+   const res = await fetch(API_URL+"?action=getUsers");
+   const data = await res.json();
+   if(data.length){
+     users = data;
+     save();
+   }
+ }catch(err){ console.log("โหลดผู้ใช้ไม่ได้"); }
+}
+
+/* ================= INIT ================= */
+renderProducts();
+renderCart();
+renderOrders();
+renderAdminOrders();
+updateLoginStatus();
+
+loadProductsFromSheet();
+loadOrdersFromSheet();
+loadUsersFromSheet();
+
+/* ================= SAVE ================= */
+function save(){
+ localStorage.setItem('products',JSON.stringify(products));
+ localStorage.setItem('cart',JSON.stringify(cart));
+ localStorage.setItem('users',JSON.stringify(users));
+ localStorage.setItem('orders',JSON.stringify(orders));
+}
+
+/* ================= PRODUCT ================= */
+function getQty(name){
+ const item = cart.find(c=>c.name===name);
+ return item ? item.qty : 0;
+}
+
+function changeProductQty(name,price,delta){
+ let item = cart.find(c=>c.name===name);
+ if(item){
+   item.qty += delta;
+   if(item.qty<=0)
+     cart = cart.filter(c=>c.name!==name);
+ }else if(delta>0){
+   cart.push({name,price,qty:1});
+ }
+ save();
+ renderProducts();
+ renderCart();
+}
+
+function renderProducts(){
+ const productList = document.getElementById('productList');
+ productList.innerHTML='';
+
+ products
+ .filter(p=>currentCategory==='ทั้งหมด'||p.category===currentCategory)
+ .forEach(p=>{
+   productList.innerHTML+=`
+   <div class="product">
+     <img src="${p.imgURL || 'https://via.placeholder.com/300'}">
+     <b>${p.name}</b>
+     <p class="small">${p.category}</p>
+     <p style="color:#e38cb7;font-weight:bold">฿${p.price}</p>
+     <div class="qty">
+       <button onclick="changeProductQty('${p.name}',${p.price},-1)">−</button>
+       <span>${getQty(p.name)}</span>
+       <button onclick="changeProductQty('${p.name}',${p.price},1)">+</button>
+     </div>
+     <button class="btn cart-btn"
+       onclick="changeProductQty('${p.name}',${p.price},1)">
+       🛒 ใส่ตะกร้า
+     </button>
+   </div>`;
+ });
+}
+
+/* ================= CART ================= */
+function renderCart(){
+ let cartList=document.getElementById('cartList');
+ cartList.innerHTML='';
+ let total=0;
+
+ cart.forEach((c,i)=>{
+   total+=c.price*c.qty;
+   cartList.innerHTML+=`
+   <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+     <div>
+       <b>${c.name}</b><br>
+       <span class="small">${c.price}฿ x ${c.qty}</span>
+     </div>
+     <div class="qty">
+       <button onclick="changeProductQty('${c.name}',${c.price},-1)">−</button>
+       <span>${c.qty}</span>
+       <button onclick="changeProductQty('${c.name}',${c.price},1)">+</button>
+       <button onclick="cart.splice(${i},1);save();renderProducts();renderCart();" style="color:red;margin-left:10px">🗑️</button>
+     </div>
+   </div>`;
+ });
+
+ document.getElementById('totalSpan').innerText=total;
+}
+
+/* ================= CHECKOUT ================= */
+async function checkout(){
+ if(cart.length===0) return alert('ยังไม่มีสินค้าในตะกร้า');
+ if(!currentUser) return alert('กรุณาเข้าสู่ระบบก่อน');
+
+ const newOrder={
+   id: Date.now(),
+   user: currentUser,
+   total: cart.reduce((sum,i)=>sum+i.price*i.qty,0),
+   status:"รับออเดอร์",
+   date:new Date().toLocaleString()
+ };
+
+ orders.push(newOrder);
+ save();
+
+ // ส่งไป Google Sheet
+ await fetch(API_URL,{
+   method:"POST",
+   body:JSON.stringify({action:"addOrder",...newOrder})
+ });
+
+ cart=[];
+ save();
+ renderCart();
+ renderOrders();
+ renderAdminOrders();
+
+ alert('สั่งซื้อสำเร็จ 🎉');
+}
+
+/* ================= LOGIN ================= */
+async function register(){
+ const email=document.getElementById('email').value;
+ const password=document.getElementById('password').value;
+
+ if(!email||!password) return alert('กรอกข้อมูลให้ครบ');
+
+ users.push({email,password});
+ save();
+
+ await fetch(API_URL,{
+   method:"POST",
+   body:JSON.stringify({action:"addUser",email,password})
+ });
+
+ alert('สมัครสมาชิกสำเร็จ');
+}
+
+function login(){
+ const email=document.getElementById('email').value;
+ const password=document.getElementById('password').value;
+
+ const user=users.find(u=>u.email===email && u.password===password);
+ if(user){
+   currentUser=email;
+   localStorage.setItem('currentUser',email);
+   updateLoginStatus();
+   alert('เข้าสู่ระบบสำเร็จ');
+ }else{
+   alert('ข้อมูลไม่ถูกต้อง');
+ }
+}
+
+function updateLoginStatus(){
+ const status=document.getElementById('loginStatus');
+ status.innerHTML=currentUser?
+ "เข้าสู่ระบบแล้ว: "+currentUser:
+ "ยังไม่ได้เข้าสู่ระบบ";
+}
+
+/* ================= NAVIGATION ================= */
+function show(id){
+ document.querySelectorAll("section").forEach(sec=>{
+   sec.classList.remove("active");
+ });
+ document.getElementById(id).classList.add("active");
+}
+
+/* ================= FILTER ================= */
+function filterCategory(cat){
+ currentCategory = cat;
+ renderProducts();
+}
+
+/* ================= QR ================= */
+function toggleQR(){
+ const method = document.getElementById("paymentMethod").value;
+ const qr = document.getElementById("qrSection");
+ qr.style.display = (method==="transfer" || method==="promptpay")
+   ? "block" : "none";
+}
+
+/* ================= USER ORDER ================= */
+function renderOrders(){
+ const orderList=document.getElementById('orderList');
+ if(!orderList) return;
+ orderList.innerHTML='';
+
+ orders
+ .filter(o=>o.user===currentUser)
+ .forEach(o=>{
+   orderList.innerHTML+=`
+   <div class="card">
+     <b>รหัสออเดอร์:</b> ${o.id}<br>
+     <b>ยอดรวม:</b> ${o.total} บาท<br>
+     <b>สถานะ:</b> ${o.status}<br>
+     <span class="small">${o.date}</span>
+   </div>`;
+ });
+}
+
+/* ================= ADMIN ORDER ================= */
+function renderAdminOrders(){
+ const adminList=document.getElementById('adminList');
+ if(!adminList) return;
+ adminList.innerHTML='';
+
+ orders.forEach(o=>{
+   adminList.innerHTML+=`
+   <div class="card">
+     <b>รหัส:</b> ${o.id} |
+     <b>ลูกค้า:</b> ${o.user} |
+     <b>ยอด:</b> ${o.total} บาท<br>
+     <select onchange="updateStatus(${o.id},this.value)">
+       <option ${o.status==="รับออเดอร์"?"selected":""}>รับออเดอร์</option>
+       <option ${o.status==="กำลังจัดส่ง"?"selected":""}>กำลังจัดส่ง</option>
+       <option ${o.status==="จัดส่งสำเร็จ"?"selected":""}>จัดส่งสำเร็จ</option>
+     </select>
+   </div>`;
+ });
+}
+
+function updateStatus(id,status){
+ const order = orders.find(o=>o.id===id);
+ if(order){
+   order.status=status;
+   save();
+   renderOrders();
+   renderAdminOrders();
+ }
+}
+/* ================= ADD / EDIT PRODUCT ================= */
+async function addProduct(){
+
+ const name = document.getElementById("nameInput").value;
+ const price = document.getElementById("priceInput").value;
+ const category = document.getElementById("categoryInput").value;
+ const file = document.getElementById("imgInput").files[0];
+
+ if(!name || !price || !category){
+   return alert("กรอกข้อมูลให้ครบ");
+ }
+
+ let imgURL = "";
+
+ // แปลงรูปเป็น base64 (ถ้ามี)
+ if(file){
+   imgURL = await new Promise(resolve=>{
+     const reader = new FileReader();
+     reader.onload = e => resolve(e.target.result);
+     reader.readAsDataURL(file);
+   });
+ }
+
+ const newProduct = { name, price, category, imgURL };
+
+ products.push(newProduct);
+ save();
+ renderProducts();
+
+ // ส่งไป Google Sheet
+ await fetch(API_URL,{
+   method:"POST",
+   body:JSON.stringify({
+     action:"addProduct",
+     ...newProduct
+   })
+ });
+
+ alert("เพิ่มสินค้าสำเร็จ ✅");
+
+ // ล้างค่า input
+ document.getElementById("nameInput").value="";
+ document.getElementById("priceInput").value="";
+ document.getElementById("categoryInput").value="";
+ document.getElementById("imgInput").value="";
+}
+
+</script>
+
+
+
+</body>
+</html>
